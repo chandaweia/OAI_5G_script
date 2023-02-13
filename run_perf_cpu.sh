@@ -1,4 +1,4 @@
-#/bin/bash
+#/bin/bash -e
 #RUN COMMAND: ./run_perf.sh perf_gnb_1ue_4mbps_dl.data cpu_1_ue_4_mbps_ul_gnb.txt 
 #OUTPUT: (1)perf_gnb_1ue_4mbps_dl.data   and   (2)perf_gnb_1ue_4mbps_dl.data-data.txt
 #OUTPUT: cpu_1_ue_4_mbps_ul_gnb.txt
@@ -6,8 +6,9 @@
 CURPATH=`pwd`/DataTest
 DIRPATH=$CURPATH/perfdata_test
 DIRTXT=$CURPATH/perfreport_test
+GRAPH=$CURPATH/flamegraph_test
 CPUDIR=$CURPATH/cpuusage_test
-TIME=60
+TIME=3
 
 if [ $# != 2 ]; then
 	echo "Missing number of parameters!"
@@ -23,6 +24,11 @@ fi
 if [ ! -d $DIRPATH ];then
 	mkdir $DIRPATH
 fi
+
+if [ ! -d $GRAPH ];then
+        mkdir $GRAPH
+fi
+
 echo "perf data will save to:"$DIRPATH/$1
 
 if [ ! -d $DIRTXT ];then
@@ -31,8 +37,12 @@ fi
 echo "perf report will save to:"$DIRTXT/$1-data.txt
 
 sudo perf record -a -F 99 -g -p $(pgrep nr-softmodem -d ',') -o $DIRPATH/$1 -- sleep $TIME
-
+sudo cp $DIRPATH/$1 perf.data
+sudo perf script | FlameGraph/stackcollapse-perf.pl | FlameGraph/flamegraph.pl > $GRAPH/$1-graph.svg
+sudo rm perf.data
+echo "perf flame graph will save to:"$GRAPH/$1-graph.svg
 sudo perf report -i $DIRPATH/$1 --no-children > $DIRTXT/$1-data.txt
+
 
 if [ ! -d $CPUDIR ];then
         mkdir $CPUDIR
